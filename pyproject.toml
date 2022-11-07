@@ -13,6 +13,7 @@ colorama = "^0.4.6"
 pathvalidate = "^2.5.2"
 perflint = "^0.7.3"
 pylint = "^2.15.5"
+joblib = "^1.2.0"
 
 [tool.poetry.group.dev.dependencies]
 icecream = "^2.1.3"

@@ -1,13 +1,11 @@
 # ETC
-django/composeexample/
-django/data/
-django/manage.py
 *.sqlite
 !*.example
 *.pem
 *.key
 raw/
 gitleaks_report*.json
+bench/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
