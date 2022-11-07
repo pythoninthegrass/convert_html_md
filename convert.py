@@ -16,9 +16,9 @@ import subprocess
 import time
 from colorama import Fore
 from functools import wraps
-# from icecream import ic
 from pathlib import Path
 from pathvalidate import replace_symbol
+from shlex import quote
 from zipfile import ZipFile
 
 # logging prefixes
@@ -63,29 +63,38 @@ notes_failed = 0
 win_dict = {}
 fail_dict = {}
 
+# exclude files
+exclude_list = ["nimbus_export", "subset"]
 
 def unzip_files():
     """Unzip files in the current directory"""
 
-    for _ in Path(".").rglob("*.zip"):
-        if _.stem in [_.name for _ in Path(".").iterdir()]:
-            logger.info(f"{Fore.GREEN}{info:<10}{Fore.RESET}Skipping {_}, already extracted")
+    # iterate through exclude list with pathlib rglob
+    for _ in Path(".").rglob("*"):
+        if any(x in _.name for x in exclude_list):
+            logger.info(f"{Fore.GREEN}{info:<10}{Fore.RESET}Skipping {_.name}")
             continue
-        logger.info(f"{Fore.GREEN}{info:<10}{Fore.RESET}Unzipping {_}")
-        try:
-            with ZipFile(_) as zip_file:
-                zip_file.extractall(path=_.stem)
-        except ZipFile.BadZipFile:
-            logger.error(f"{Fore.RED}{error:<10}{Fore.RESET}Skipping {_}, not a zip file")
+        if _.suffix == ".zip":
+            logger.info(f"{Fore.GREEN}{info:<10}{Fore.RESET}Unzipping {_.name}")
+            try:
+                with ZipFile(_) as zip_file:
+                    zip_file.extractall(path=f"{_.parent}/{_.stem}")
+            except ZipFile.BadZipFile:
+                logger.error(f"{Fore.RED}{error:<10}{Fore.RESET}Skipping {_}, not a zip file")
 
 
 @atexit.register
 def cleanup_zip_files():
     """Remove zip files in the current directory"""
 
-    for _ in Path(".").rglob("*.zip"):
-        logger.info(f"{Fore.GREEN}{info:<10}{Fore.RESET}Removing {_}")
-        _.unlink()
+    # iterate through exclude list with pathlib rglob
+    for _ in Path(".").rglob("*"):
+        if any(x in _.name for x in exclude_list):
+            logger.info(f"{Fore.GREEN}{info:<10}{Fore.RESET}Skipping {_.name}")
+            continue
+        if _.suffix == ".zip":
+            logger.info(f"{Fore.GREEN}{info:<10}{Fore.RESET}Removing {_.name}")
+            _.unlink()
 
 
 def write_note(html_file, markdown_destination):
@@ -97,7 +106,11 @@ def write_note(html_file, markdown_destination):
 
     logger.info(f"{Fore.GREEN}{info:<10}{Fore.RESET}Writing markdown to {dest}")
 
-    cmd = f"pandoc '{html_file}' --from html --to markdown_strict-raw_html"
+    # escape quotes with shlex
+    html_file = quote(str(html_file))
+
+    # convert html to markdown
+    cmd = f"pandoc {html_file} --from html --to markdown_strict-raw_html"
 
     try:
         pandoc_run = subprocess.check_output(cmd, stderr=subprocess.STDOUT, shell=True)
@@ -116,7 +129,6 @@ def write_note(html_file, markdown_destination):
         fail_dict[notes_failed] = html_file
 
 
-# TODO: error handling for tld retaining nested dirs (e.g., 'All Notes' vs. 'Books')
 @timeit
 def main():
     # unzip files
@@ -124,11 +136,11 @@ def main():
 
     # TODO: add joblib parallelization after getting results of html files
     # get html files
-    html_files = [_.resolve() for _ in Path(".").rglob("*.html")]
+    html_files = [i for i in Path(".").rglob("*.html")]
 
     # convert html files to markdown
     for _ in html_files:
-        html_file = _.resolve()
+        html_file = _.absolute()
 
         # directory name
         dirname = html_file.parent.name
@@ -140,7 +152,8 @@ def main():
         sanitized = " ".join(sanitized.split())
 
         # rename directory to sanitized filepath with pathlib
-        filepath = html_file.parent.rename(sanitized)
+        filepath = Path(f"{html_file.parent.parent}/{sanitized}")
+        html_file.parent.rename(filepath)
 
         # filename
         filename = html_file.stem + ".md"
@@ -149,7 +162,7 @@ def main():
         html_file = Path(f"{filepath}/{html_file.name}").resolve()
 
         # create markdown file name
-        md_destination = Path(f"{filepath}/{filename}")
+        md_destination = Path(filepath / filename).absolute()
 
         if md_destination.exists():
             dest = Path(f"{md_destination}").resolve()
