@@ -5,23 +5,118 @@ Extended version of the [Nimbus HTML to Markdown gist](https://gist.github.com/p
 
 Uses [pandoc](https://pandoc.org/) to convert HTML files with asset directories exported from Nimbus for use in other vendor-agnostic Markdown readers (cf. [UpNote](https://getupnote.com/)).
 
+**Table of Contents**
+* [convert_html_md](#convert_html_md)
+  * [Summary](#summary)
+  * [Setup](#setup)
+    * [Dependencies](#dependencies)
+  * [Usage](#usage)
+  * [TODO](#todo)
+  * [Further Reading](#further-reading)
+
 ## Setup
 * Install
     * [editorconfig](https://editorconfig.org/)
     * [asdf](https://asdf-vm.com/guide/getting-started.html#_2-download-asdf)
     * [poetry](https://python-poetry.org/docs/)
 
+### Dependencies
+`pip` comes with python by default and is sufficient to get up and running quickly. `asdf` is a wrapper for `pyenv` (among other runtimes) and takes care of python versions. `poetry` handles dependencies, virtual environments, and packaging.
+
+* `pip`
+    ```bash
+    # activate a new virtual environment
+    python3 -m venv .venv; . .venv/bin/activate; pip3 install --upgrade pip
+
+    # install dependencies
+    python3 -m pip install -r requirements.txt
+    ```
+* `asdf`
+    ```bash
+    # add python plugin
+    asdf plugin-add python
+
+    # install stable python
+    asdf install python <latest>  # 3.10.8
+
+    # uninstall version
+    asdf uninstall python latest
+
+    # refresh symlinks for installed python runtimes
+    asdf reshim python
+
+    # set working directory version (i.e., repo)
+    asdf local python latest
+
+    # set stable to system python
+    asdf global python latest
+    ```
+* `poetry`
+    ```bash
+    # Install
+    curl -sSL https://install.python-poetry.org | $(which python3) -
+
+    # Uninstall
+    export POETRY_UNINSTALL=1
+    curl -sSL https://install.python-poetry.org | $(which python3) -
+
+    # Change config
+    poetry config virtualenvs.in-project true           # .venv in `pwd`
+
+    # Install from requirements.txt
+    poetry add `cat requirements.txt`
+
+    # Update dependencies
+    poetry update
+
+    # Remove library
+    poetry remove <lib>
+
+    # Generate requirements.txt
+    poetry export -f requirements.txt --output requirements.txt --without-hashes
+    ```
+* Poetry with `asdf`
+    ```bash
+    # Add poetry asdf plugin
+    asdf plugin-add poetry https://github.com/asdf-community/asdf-poetry.git
+
+    # Install latest version via asdf
+    asdf install poetry latest
+
+    # Set latest version as default
+    asdf global poetry latest
+
+    # Install via asdf w/version
+    ASDF_POETRY_INSTALL_URL=https://install.python-poetry.org asdf install poetry 1.2.2
+    asdf local poetry 1.2.2
+    ```
+
 ## Usage
-```bash
-# activate a new virtual environment
-python3 -m venv venv; . venv/bin/activate; pip3 install --upgrade pip
+* Virtual environment
+    ```bash
+    # source virtual environment (venv) from dependencies setup above
+    . .venv/bin/activate
 
-# install dependencies
-python3 -m pip install -r requirements.txt
+    # run program from top-level directory
+    python3 convert.py
 
-# run program from top-level directory
-python3 convert.py
-```
+    # exit
+    deactivate
+    ```
+* Poetry
+    ```bash
+    # Run script and exit environment
+    poetry run python convert.py
+
+    # Activate virtual environment (venv)
+    poetry shell
+
+    # Run script
+    python convert.py
+
+    # Deactivate venv
+    exit  # ctrl-d
+    ```
 
 ## TODO
 * ~~Document usage~~
