@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 
-import atexit
+# flake8: noqa
+
+# fmt: off
+# import atexit
 import logging
 import pandas as pd
 import shutil
@@ -8,10 +11,12 @@ import subprocess
 import time
 from colorama import Fore
 from functools import wraps
+# from joblib import Parallel, delayed
 from pathlib import Path
 from pathvalidate import replace_symbol
 from shlex import quote
 from zipfile import ZipFile
+# fmt: on
 
 # logging prefixes
 info = "INFO:"
@@ -70,20 +75,6 @@ def unzip_files():
                 zip_file.extractall(path=f"{_.parent}/{_.stem}")
 
 
-@atexit.register
-def cleanup_zip_files():
-    """Remove zip files in the current directory"""
-
-    # iterate through exclude list with pathlib rglob
-    for _ in Path(".").rglob("*"):
-        if any(x in _.name for x in exclude_list):
-            logger.info(f"{Fore.GREEN}{info:<10}{Fore.RESET}Skipping {_.name}")
-            continue
-        if _.suffix == ".zip":
-            logger.info(f"{Fore.GREEN}{info:<10}{Fore.RESET}Removing {_.name}")
-            _.unlink()
-
-
 def write_note(html_file, markdown_destination):
     """Convert html file to markdown and write to original directory"""
 
@@ -116,7 +107,21 @@ def write_note(html_file, markdown_destination):
         fail_dict[notes_failed] = html_file
 
 
-@atexit.register
+# @atexit.register
+def cleanup_zip_files():
+    """Remove zip files in the current directory"""
+
+    # iterate through exclude list with pathlib rglob
+    for _ in Path(".").rglob("*"):
+        if any(x in _.name for x in exclude_list):
+            logger.info(f"{Fore.GREEN}{info:<10}{Fore.RESET}Skipping {_.name}")
+            continue
+        if _.suffix == ".zip":
+            logger.info(f"{Fore.GREEN}{info:<10}{Fore.RESET}Removing {_.name}")
+            _.unlink()
+
+
+# @atexit.register
 def move_empties():
     """Move empty markdown files"""
 
@@ -209,6 +214,10 @@ def main():
 
     df = pd.DataFrame(fails)
     df.to_csv("fail_list.csv", index=False)
+
+    # QA-only; use `@atexit.register`
+    cleanup_zip_files()
+    move_empties()
 
 
 if __name__ == "__main__":
