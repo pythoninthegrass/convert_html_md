@@ -40,3 +40,5 @@ python convert.py
 [Run Code after Your Program Exits with Python’s AtExit | by Mike Huls | Sep, 2022 | Towards Data Science](https://towardsdatascience.com/run-code-after-your-program-exits-with-pythons-atexit-82a0069b486a)
 
 [Replace multiple spaces with a single space in Python | bobbyhadz](https://bobbyhadz.com/blog/python-replace-multiple-spaces-with-single-space)
+
+[Python's zipfile: Manipulate Your ZIP Files Efficiently – Real Python](https://realpython.com/python-zipfile/#building-a-zip-file-from-a-directory)
