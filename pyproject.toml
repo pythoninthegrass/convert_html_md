@@ -7,7 +7,7 @@ readme = "README.md"
 packages = [{include = "convert_html_md"}]
 
 [tool.poetry.dependencies]
-python = "^3.11"
+python = ">=3.10.8,<4.0.0"
 pandas = "^1.5.1"
 colorama = "^0.4.6"
 pathvalidate = "^2.5.2"
