@@ -1,18 +1,19 @@
-astroid==2.12.12
-colorama==0.4.6
-dill==0.3.6
-isort==5.10.1
-joblib==1.2.0
-lazy-object-proxy==1.8.0
-mccabe==0.7.0
-numpy==1.23.4
-pandas==1.5.1
-pathvalidate==2.5.2
-perflint==0.7.3
-platformdirs==2.5.3
-pylint==2.15.5
-python-dateutil==2.8.2
-pytz==2022.6
-six==1.16.0
-tomlkit==0.11.6
-wrapt==1.14.1
+astroid==2.12.12 ; python_full_version >= "3.10.8" and python_full_version < "4.0.0"
+colorama==0.4.6 ; python_full_version >= "3.10.8" and python_full_version < "4.0.0"
+dill==0.3.6 ; python_full_version >= "3.10.8" and python_full_version < "4.0.0"
+isort==5.10.1 ; python_full_version >= "3.10.8" and python_version < "4.0"
+joblib==1.2.0 ; python_full_version >= "3.10.8" and python_full_version < "4.0.0"
+lazy-object-proxy==1.8.0 ; python_full_version >= "3.10.8" and python_full_version < "4.0.0"
+mccabe==0.7.0 ; python_full_version >= "3.10.8" and python_full_version < "4.0.0"
+numpy==1.23.4 ; python_full_version >= "3.10.8" and python_full_version < "4.0.0"
+pandas==1.5.1 ; python_full_version >= "3.10.8" and python_full_version < "4.0.0"
+pathvalidate==2.5.2 ; python_full_version >= "3.10.8" and python_full_version < "4.0.0"
+perflint==0.7.3 ; python_full_version >= "3.10.8" and python_full_version < "4.0.0"
+platformdirs==2.5.3 ; python_full_version >= "3.10.8" and python_full_version < "4.0.0"
+pylint==2.15.5 ; python_full_version >= "3.10.8" and python_full_version < "4.0.0"
+python-dateutil==2.8.2 ; python_full_version >= "3.10.8" and python_full_version < "4.0.0"
+pytz==2022.6 ; python_full_version >= "3.10.8" and python_full_version < "4.0.0"
+six==1.16.0 ; python_full_version >= "3.10.8" and python_full_version < "4.0.0"
+tomli==2.0.1 ; python_full_version >= "3.10.8" and python_version < "3.11"
+tomlkit==0.11.6 ; python_full_version >= "3.10.8" and python_full_version < "4.0.0"
+wrapt==1.14.1 ; python_full_version >= "3.10.8" and python_full_version < "4.0.0"
