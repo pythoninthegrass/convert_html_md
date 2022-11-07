@@ -22,14 +22,11 @@ warning = "WARNING:"
 logger = logging.getLogger(__name__)
 
 # Define a stream handler for the console output
-handler = logging.StreamHandler()# Customize the formatter on the console
-formatter = logging.Formatter(
-    "[ %(asctime)s %(name)s ] %(message)s",
-    datefmt="%Y-%m-%d %H:%M:%S"
-    )
+handler = logging.StreamHandler()  # Customize the formatter on the console
+formatter = logging.Formatter("[ %(asctime)s %(name)s ] %(message)s", datefmt="%Y-%m-%d %H:%M:%S")
 
 # Add the formatter to the handler
-handler.setFormatter(formatter)# Add the stream handler to the logger that we will use
+handler.setFormatter(formatter)  # Add the stream handler to the logger that we will use
 logger.addHandler(handler)
 
 # Set the level of logging to be INFO instead of the default WARNING
@@ -58,6 +55,7 @@ fail_dict = {}
 # exclude files
 exclude_list = ["archive", "nimbus_export", "subset"]
 
+
 def unzip_files():
     """Unzip files in the current directory"""
 
@@ -68,11 +66,8 @@ def unzip_files():
             continue
         if _.suffix == ".zip":
             logger.info(f"{Fore.GREEN}{info:<10}{Fore.RESET}Unzipping {_.name}")
-            try:
-                with ZipFile(_) as zip_file:
-                    zip_file.extractall(path=f"{_.parent}/{_.stem}")
-            except ZipFile.BadZipFile:
-                logger.error(f"{Fore.RED}{error:<10}{Fore.RESET}Skipping {_}, not a zip file")
+            with ZipFile(_) as zip_file:
+                zip_file.extractall(path=f"{_.parent}/{_.stem}")
 
 
 @atexit.register
@@ -148,10 +143,7 @@ def move_empties():
     else:
         with ZipFile(f"{archive_dir}.zip", mode="w") as zip_file:
             for file_path in archive_dir.rglob("*"):
-                zip_file.write(
-                    file_path,
-                    arcname=file_path.relative_to(archive_dir)
-                )
+                zip_file.write(file_path, arcname=file_path.relative_to(archive_dir))
 
     # remove archive directory
     try:
