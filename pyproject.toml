@@ -11,6 +11,8 @@ python = "^3.11"
 pandas = "^1.5.1"
 colorama = "^0.4.6"
 pathvalidate = "^2.5.2"
+perflint = "^0.7.3"
+pylint = "^2.15.5"
 
 [tool.poetry.group.dev.dependencies]
 icecream = "^2.1.3"
