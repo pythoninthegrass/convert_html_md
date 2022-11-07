@@ -3,6 +3,7 @@
 import atexit
 import logging
 import pandas as pd
+import shutil
 import subprocess
 import time
 from colorama import Fore
@@ -55,7 +56,7 @@ win_dict = {}
 fail_dict = {}
 
 # exclude files
-exclude_list = ["nimbus_export", "subset"]
+exclude_list = ["archive", "nimbus_export", "subset"]
 
 def unzip_files():
     """Unzip files in the current directory"""
@@ -120,6 +121,45 @@ def write_note(html_file, markdown_destination):
         fail_dict[notes_failed] = html_file
 
 
+@atexit.register
+def move_empties():
+    """Move empty markdown files"""
+
+    # create archive directory
+    archive_dir = Path("./archive")
+    archive_dir.mkdir(exist_ok=True)
+
+    empties = [i for i in Path(".").rglob("*.md")]
+
+    for _ in empties:
+        if _.stat().st_size == 1:
+            logger.info(f"{Fore.GREEN}{info:<10}{Fore.RESET}Archiving empty directory {_.parent.name}")
+
+            # move makdown directory to archive directory
+            try:
+                shutil.move(f"{_.parent}", f"./archive/")
+            except shutil.Error:
+                logger.error(f"{Fore.RED}{error:<10}{Fore.RESET}Failed to move {_.parent.name} to archive directory")
+                continue
+
+    # zip archive directory
+    if Path(f"{archive_dir}.zip").exists():
+        logger.info(f"{Fore.GREEN}{info:<10}{Fore.RESET}Archive directory already exists, skipping")
+    else:
+        with ZipFile(f"{archive_dir}.zip", mode="w") as zip_file:
+            for file_path in archive_dir.rglob("*"):
+                zip_file.write(
+                    file_path,
+                    arcname=file_path.relative_to(archive_dir)
+                )
+
+    # remove archive directory
+    try:
+        shutil.rmtree("./archive")
+    except shutil.Error:
+        logger.error(f"{Fore.RED}{error:<10}{Fore.RESET}Failed to remove archive directory")
+
+
 @timeit
 def main():
     # unzip files
@@ -144,7 +184,11 @@ def main():
 
         # rename directory to sanitized filepath with pathlib
         filepath = Path(f"{html_file.parent.parent}/{sanitized}")
-        html_file.parent.rename(filepath)
+        try:
+            html_file.parent.rename(filepath)
+        except OSError:
+            logger.error(f"{Fore.RED}{error:<10}{Fore.RESET}Failed to rename {html_file.parent.name} to {sanitized}")
+            continue
 
         # filename
         filename = html_file.stem + ".md"
