@@ -5,7 +5,11 @@
 *.key
 raw/
 gitleaks_report*.json
+archive.zip
 bench/
+fail_list*
+win_list*
+prof*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
