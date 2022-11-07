@@ -1,14 +1,5 @@
 #!/usr/bin/env python3
 
-"""
-SOURCES:
-https://gist.github.com/aolle/6e595650391deef79ffb1c9bb38fb6e9
-https://dev.to/kcdchennai/python-decorator-to-measure-execution-time-54hk
-https://medium.com/the-brainwave/the-boilerplate-for-logging-in-python-105952585f39
-https://towardsdatascience.com/run-code-after-your-program-exits-with-pythons-atexit-82a0069b486a
-https://bobbyhadz.com/blog/python-replace-multiple-spaces-with-single-space
-"""
-
 import atexit
 import logging
 import pandas as pd
