@@ -14,12 +14,13 @@ Uses [pandoc](https://pandoc.org/) to convert HTML files with asset directories 
 ## Usage
 ```bash
 # activate a new virtual environment
-python3 -m venv venv; . venv/bin/activate; pip install --upgrade pip
+python3 -m venv venv; . venv/bin/activate; pip3 install --upgrade pip
+
 # install dependencies
-python -m pip install -r requirements.txt
+python3 -m pip install -r requirements.txt
 
 # run program from top-level directory
-python convert.py
+python3 convert.py
 ```
 
 ## TODO
