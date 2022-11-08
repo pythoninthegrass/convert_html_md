@@ -51,7 +51,7 @@ def timeit(func):
     return timeit_wrapper
 
 
-# TODO: re-wrap main vs. async main
+# TODO: re-wrap write_note vs. async main
 # def background(func):
 #     @wraps(func)
 #     def wrapped(*args, **kwargs):
@@ -229,6 +229,8 @@ def export_results():
         df.to_csv("fail_list.csv", index=False)
 
 
+# TODO: debug atexit calls vs. asyncio calls/blocking processes at end of main (magic number is 2m48s -- hit twice now)
+# * excluding notes/ had no effect on time ¯\_(ツ)_/¯
 async def main():
     # unzip files
     unzip_files(dirname="bench")
