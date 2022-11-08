@@ -72,7 +72,6 @@ exclude_list = ["archive", "nimbus_export", "subset"]
 
 # iterate through exclude list with pathlib rglob
 zip_path = Path.cwd()
-zip_files = [_.absolute() for _ in Path(zip_path).rglob("*.zip") if not any(x in _.name for x in exclude_list)]
 
 
 def unzip_files(dirname=None):
@@ -80,6 +79,9 @@ def unzip_files(dirname=None):
 
     if not dirname:
         dirname = zip_path
+
+    global zip_files
+    zip_files = [_.absolute() for _ in Path(dirname).rglob("*.zip") if not any(x in _.name for x in exclude_list)]
 
     for _ in zip_files:
         logger.info(f"{Fore.GREEN}{info:<10}{Fore.RESET}Unzipping {_.name}")
