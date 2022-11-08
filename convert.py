@@ -70,20 +70,34 @@ fail_dict = {}
 # exclude files
 exclude_list = ["archive", "nimbus_export", "subset"]
 
+# iterate through exclude list with pathlib rglob
+zip_path = Path.cwd()
+zip_files = [_.absolute() for _ in Path(zip_path).rglob("*.zip") if not any(x in _.name for x in exclude_list)]
+
 
 def unzip_files(dirname=None):
     """Unzip files in the current directory"""
 
     if not dirname:
-        dirname = Path.cwd()
-
-    # iterate through exclude list with pathlib rglob
-    zip_files = [_.absolute() for _ in Path(dirname).rglob("*.zip") if not any(x in _.name for x in exclude_list)]
+        dirname = zip_path
 
     for _ in zip_files:
         logger.info(f"{Fore.GREEN}{info:<10}{Fore.RESET}Unzipping {_.name}")
         with ZipFile(_) as zip_file:
             zip_file.extractall(path=f"{_.parent}/{_.stem}")
+
+
+@atexit.register
+def cleanup_zip_files(dirname=None):
+    """Remove zip files in the current directory"""
+
+    if not dirname:
+        dirname = zip_path
+
+    # iterate through exclude list with pathlib rglob
+    for _ in zip_files:
+        logger.info(f"{Fore.GREEN}{info:<10}{Fore.RESET}Removing {_.name}")
+        _.unlink()
 
 
 # @timeit
@@ -160,20 +174,6 @@ async def convert_html_to_markdown(html_files):
         await write_note(html_file, md_destination)
 
     logger.info(f"{Fore.GREEN}{info:<10}{Fore.RESET}Converted {notes_written} notes, failed to convert {notes_failed} notes")
-
-
-@atexit.register
-def cleanup_zip_files():
-    """Remove zip files in the current directory"""
-
-    # iterate through exclude list with pathlib rglob
-    for _ in Path(".").rglob("*"):
-        if any(x in _.name for x in exclude_list):
-            logger.info(f"{Fore.GREEN}{info:<10}{Fore.RESET}Skipping {_.name}")
-            continue
-        if _.suffix == ".zip":
-            logger.info(f"{Fore.GREEN}{info:<10}{Fore.RESET}Removing {_.name}")
-            _.unlink()
 
 
 @atexit.register
