@@ -4,17 +4,14 @@
 
 # fmt: off
 import asyncio
-# import atexit
-# import dask
+import atexit
 import logging
-# import multiprocessing
 import pandas as pd
 import shutil
 import subprocess
 import time
 from colorama import Fore
 from functools import wraps
-# from joblib import Parallel, delayed
 from pathlib import Path
 from pathvalidate import replace_symbol
 from shlex import quote
@@ -54,11 +51,14 @@ def timeit(func):
     return timeit_wrapper
 
 
-def background(f):
-    def wrapped(*args, **kwargs):
-        return asyncio.get_event_loop().run_in_executor(None, f, *args, **kwargs)
+# TODO: re-wrap main vs. async main
+# def background(func):
+#     @wraps(func)
+#     def wrapped(*args, **kwargs):
+#         result = asyncio.get_event_loop().run_in_executor(None, func, *args, **kwargs)
+#         return result
 
-    return wrapped
+#     return wrapped
 
 
 notes_written = 0
@@ -71,25 +71,23 @@ fail_dict = {}
 exclude_list = ["archive", "nimbus_export", "subset"]
 
 
-# @dask.delayed
-# @timeit
-def unzip_files():
+def unzip_files(dirname=None):
     """Unzip files in the current directory"""
 
+    if not dirname:
+        dirname = Path.cwd()
+
     # iterate through exclude list with pathlib rglob
-    for _ in Path(".").rglob("*"):
-        if any(x in _.name for x in exclude_list):
-            logger.info(f"{Fore.GREEN}{info:<10}{Fore.RESET}Skipping {_.name}")
-            continue
-        if _.suffix == ".zip":
-            logger.info(f"{Fore.GREEN}{info:<10}{Fore.RESET}Unzipping {_.name}")
-            with ZipFile(_) as zip_file:
-                zip_file.extractall(path=f"{_.parent}/{_.stem}")
+    zip_files = [_.absolute() for _ in Path(dirname).rglob("*.zip") if not any(x in _.name for x in exclude_list)]
+
+    for _ in zip_files:
+        logger.info(f"{Fore.GREEN}{info:<10}{Fore.RESET}Unzipping {_.name}")
+        with ZipFile(_) as zip_file:
+            zip_file.extractall(path=f"{_.parent}/{_.stem}")
 
 
 # @timeit
-@background
-def write_note(html_file, markdown_destination):
+async def write_note(html_file, markdown_destination):
     """Convert html file to markdown and write to original directory"""
 
     global notes_written, notes_failed
@@ -121,62 +119,8 @@ def write_note(html_file, markdown_destination):
         fail_dict[notes_failed] = html_file
 
 
-# @timeit               # second
-# @atexit.register      # first
-def cleanup_zip_files():
-    """Remove zip files in the current directory"""
-
-    # iterate through exclude list with pathlib rglob
-    for _ in Path(".").rglob("*"):
-        if any(x in _.name for x in exclude_list):
-            logger.info(f"{Fore.GREEN}{info:<10}{Fore.RESET}Skipping {_.name}")
-            continue
-        if _.suffix == ".zip":
-            logger.info(f"{Fore.GREEN}{info:<10}{Fore.RESET}Removing {_.name}")
-            _.unlink()
-
-
-# @timeit               # second
-# @atexit.register      # first
-def move_empties():
-    """Move empty markdown files"""
-
-    # create archive directory
-    archive_dir = Path("./archive")
-    archive_dir.mkdir(exist_ok=True)
-
-    empties = [i for i in Path(".").rglob("*.md")]
-
-    for _ in empties:
-        if _.stat().st_size == 1:
-            logger.info(f"{Fore.GREEN}{info:<10}{Fore.RESET}Archiving empty directory {_.parent.name}")
-
-            # move makdown directory to archive directory
-            try:
-                shutil.move(f"{_.parent}", f"./archive/")
-            except shutil.Error:
-                logger.error(f"{Fore.RED}{error:<10}{Fore.RESET}Failed to move {_.parent.name} to archive directory")
-                continue
-
-    # zip archive directory
-    if Path(f"{archive_dir}.zip").exists():
-        logger.info(f"{Fore.GREEN}{info:<10}{Fore.RESET}Archive directory already exists, skipping")
-    else:
-        with ZipFile(f"{archive_dir}.zip", mode="w") as zip_file:
-            for file_path in archive_dir.rglob("*"):
-                zip_file.write(file_path, arcname=file_path.relative_to(archive_dir))
-
-    # remove archive directory
-    try:
-        shutil.rmtree("./archive")
-    except shutil.Error:
-        logger.error(f"{Fore.RED}{error:<10}{Fore.RESET}Failed to remove archive directory")
-
-
-# @dask.delayed
 # @timeit
-# @background
-def convert_html_to_markdown(html_files):
+async def convert_html_to_markdown(html_files):
     """Convert html files to markdown"""
 
     # convert html files to markdown
@@ -213,62 +157,93 @@ def convert_html_to_markdown(html_files):
             dest = Path(f"{md_destination}").resolve()
             logger.info(f"{Fore.GREEN}{info:<10}{Fore.RESET}Markdown file {dest} already exists, skipping")
             continue
-        write_note(html_file, md_destination)
+        await write_note(html_file, md_destination)
 
     logger.info(f"{Fore.GREEN}{info:<10}{Fore.RESET}Converted {notes_written} notes, failed to convert {notes_failed} notes")
 
 
-# @timeit
+@atexit.register
+def cleanup_zip_files():
+    """Remove zip files in the current directory"""
+
+    # iterate through exclude list with pathlib rglob
+    for _ in Path(".").rglob("*"):
+        if any(x in _.name for x in exclude_list):
+            logger.info(f"{Fore.GREEN}{info:<10}{Fore.RESET}Skipping {_.name}")
+            continue
+        if _.suffix == ".zip":
+            logger.info(f"{Fore.GREEN}{info:<10}{Fore.RESET}Removing {_.name}")
+            _.unlink()
+
+
+@atexit.register
+async def move_empties():
+    """Move empty markdown files"""
+
+    # create archive directory
+    archive_dir = Path("./archive")
+    archive_dir.mkdir(exist_ok=True)
+
+    empties = [i for i in Path(".").rglob("*.md")]
+
+    for _ in empties:
+        if _.stat().st_size == 1:
+            logger.info(f"{Fore.GREEN}{info:<10}{Fore.RESET}Archiving empty directory {_.parent.name}")
+
+            # move makdown directory to archive directory
+            try:
+                shutil.move(f"{_.parent}", f"./archive/")
+            except shutil.Error:
+                logger.error(f"{Fore.RED}{error:<10}{Fore.RESET}Failed to move {_.parent.name} to archive directory")
+                continue
+
+    # zip archive directory
+    if Path(f"{archive_dir}.zip").exists():
+        logger.info(f"{Fore.GREEN}{info:<10}{Fore.RESET}Archive directory already exists, skipping")
+    else:
+        with ZipFile(f"{archive_dir}.zip", mode="w") as zip_file:
+            for file_path in archive_dir.rglob("*"):
+                zip_file.write(file_path, arcname=file_path.relative_to(archive_dir))
+
+    # remove archive directory
+    try:
+        shutil.rmtree("./archive")
+    except shutil.Error:
+        logger.error(f"{Fore.RED}{error:<10}{Fore.RESET}Failed to remove archive directory")
+
+
+# TODO: QA
+@atexit.register
 def export_results():
     # create dataframe
     wins = pd.DataFrame.from_dict(win_dict, orient="index", columns=["note"])
     fails = pd.DataFrame.from_dict(fail_dict, orient="index", columns=["note"])
 
     # write the dataframe to a csv file
-    df = pd.DataFrame(wins)
-    df.to_csv("win_list.csv", index=False)
+    if not wins.empty:
+        df = pd.DataFrame(wins)
+        df.to_csv("win_list.csv", index=False)
 
-    df = pd.DataFrame(fails)
-    df.to_csv("fail_list.csv", index=False)
+    if not fails.empty:
+        df = pd.DataFrame(fails)
+        df.to_csv("fail_list.csv", index=False)
 
 
-# TODO: look up blocking processes in asyncio:
-# 1. unzip_files(): doesn't need to sequentially unzip files, just has to finish before the next job
-# 2. convert_html_to_markdown()
-# 3. write_note()
-# 4. cleanup_zip_files()
-# 5. move_empties()
-# * NOTE: best main() run took 166.1588 seconds / 2m 48s w/only write_note() parallelized; others cause race conditions w/lost data or other shenanigans
-@timeit
-def main():
+async def main():
     # unzip files
-    unzip_files()
+    unzip_files(dirname="bench")
 
-    # convert html to markdown
+    # get html files
     html_files = [i for i in Path(".").rglob("*.html")]
 
-    # serial
-    convert_html_to_markdown(html_files)
+    # async task list
+    tasks = []
 
-    # dask parallel
-    # convert_html_to_markdown(html_files).compute()
+    # convert html to markdown
+    tasks.append(convert_html_to_markdown(html_files))
 
-    # # parallel (n_jobs=-1 uses all available cores; -2 uses all but one core)
-    # Parallel(n_jobs=-1)(delayed(convert_html_to_markdown)(str(i.parent.parent)) for i in Path(".").rglob("*.html"))
-    # Parallel(n_jobs=-1)(delayed(convert_html_to_markdown)(i) for i in html_files)
-
-    # # multiprocessing
-    # # create a process pool that uses all cpus
-    # with multiprocessing.Pool() as pool:
-    #     pool.map(convert_html_to_markdown, html_files)
-
-    # export results
-    export_results()
-
-    # QA-only; use `@atexit.register`
-    cleanup_zip_files()
-    move_empties()
+    await asyncio.gather(*tasks)
 
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
