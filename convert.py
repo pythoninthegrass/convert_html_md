@@ -3,8 +3,11 @@
 # flake8: noqa
 
 # fmt: off
+import asyncio
 # import atexit
+# import dask
 import logging
+# import multiprocessing
 import pandas as pd
 import shutil
 import subprocess
@@ -51,6 +54,13 @@ def timeit(func):
     return timeit_wrapper
 
 
+def background(f):
+    def wrapped(*args, **kwargs):
+        return asyncio.get_event_loop().run_in_executor(None, f, *args, **kwargs)
+
+    return wrapped
+
+
 notes_written = 0
 notes_failed = 0
 
@@ -61,6 +71,8 @@ fail_dict = {}
 exclude_list = ["archive", "nimbus_export", "subset"]
 
 
+# @dask.delayed
+# @timeit
 def unzip_files():
     """Unzip files in the current directory"""
 
@@ -75,6 +87,8 @@ def unzip_files():
                 zip_file.extractall(path=f"{_.parent}/{_.stem}")
 
 
+# @timeit
+@background
 def write_note(html_file, markdown_destination):
     """Convert html file to markdown and write to original directory"""
 
@@ -107,7 +121,8 @@ def write_note(html_file, markdown_destination):
         fail_dict[notes_failed] = html_file
 
 
-# @atexit.register
+# @timeit               # second
+# @atexit.register      # first
 def cleanup_zip_files():
     """Remove zip files in the current directory"""
 
@@ -121,7 +136,8 @@ def cleanup_zip_files():
             _.unlink()
 
 
-# @atexit.register
+# @timeit               # second
+# @atexit.register      # first
 def move_empties():
     """Move empty markdown files"""
 
@@ -157,14 +173,11 @@ def move_empties():
         logger.error(f"{Fore.RED}{error:<10}{Fore.RESET}Failed to remove archive directory")
 
 
-@timeit
-def main():
-    # unzip files
-    unzip_files()
-
-    # TODO: add joblib parallelization after getting results of html files
-    # get html files
-    html_files = [i for i in Path(".").rglob("*.html")]
+# @dask.delayed
+# @timeit
+# @background
+def convert_html_to_markdown(html_files):
+    """Convert html files to markdown"""
 
     # convert html files to markdown
     for _ in html_files:
@@ -204,6 +217,9 @@ def main():
 
     logger.info(f"{Fore.GREEN}{info:<10}{Fore.RESET}Converted {notes_written} notes, failed to convert {notes_failed} notes")
 
+
+# @timeit
+def export_results():
     # create dataframe
     wins = pd.DataFrame.from_dict(win_dict, orient="index", columns=["note"])
     fails = pd.DataFrame.from_dict(fail_dict, orient="index", columns=["note"])
@@ -214,6 +230,40 @@ def main():
 
     df = pd.DataFrame(fails)
     df.to_csv("fail_list.csv", index=False)
+
+
+# TODO: look up blocking processes in asyncio:
+# 1. unzip_files(): doesn't need to sequentially unzip files, just has to finish before the next job
+# 2. convert_html_to_markdown()
+# 3. write_note()
+# 4. cleanup_zip_files()
+# 5. move_empties()
+# * NOTE: best main() run took 166.1588 seconds / 2m 48s w/only write_note() parallelized; others cause race conditions w/lost data or other shenanigans
+@timeit
+def main():
+    # unzip files
+    unzip_files()
+
+    # convert html to markdown
+    html_files = [i for i in Path(".").rglob("*.html")]
+
+    # serial
+    convert_html_to_markdown(html_files)
+
+    # dask parallel
+    # convert_html_to_markdown(html_files).compute()
+
+    # # parallel (n_jobs=-1 uses all available cores; -2 uses all but one core)
+    # Parallel(n_jobs=-1)(delayed(convert_html_to_markdown)(str(i.parent.parent)) for i in Path(".").rglob("*.html"))
+    # Parallel(n_jobs=-1)(delayed(convert_html_to_markdown)(i) for i in html_files)
+
+    # # multiprocessing
+    # # create a process pool that uses all cpus
+    # with multiprocessing.Pool() as pool:
+    #     pool.map(convert_html_to_markdown, html_files)
+
+    # export results
+    export_results()
 
     # QA-only; use `@atexit.register`
     cleanup_zip_files()
