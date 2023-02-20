@@ -52,3 +52,7 @@ export-reqs: update-deps
 # [git]      update git submodules
 sub:
     git submodule update --init --recursive && git pull --recurse-submodules
+
+# [git]      update pre-commit hooks
+pre-commit:
+    pre-commit autoupdate
